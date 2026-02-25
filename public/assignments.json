@@ -14,6 +14,19 @@
 			],
 			"inputs": [[]],
 			"answers": [true]
+		}, {
+			"id": "0392b1cc-c0d5-40d4-aac9-fd70f7d5df43",
+			"title": "prompt and parseFloat",
+			"segments": [
+				"/**\n * Hello World 🧑‍💻\n *\n * This will introduce the \"prompt\" and \"parseFloat\" functions.\n * The prompt function is ordinary used to ask a user to insert some information.\n * Here it's used to insert two numbers as text that are then fed into parseFloat\n * which convert them into plain numbers.\n * The comment after the prompt displays what number are being inserted.\n * \n * Add the numbers \"a\" and \"b\" to finish this assignment. If you get a partial solution, that means\n * that you have not used the \"a\" and \"b\" variables. \n */\nconst a = parseFloat(prompt()) // 3\nconst b = parseFloat(prompt()) // 7\nlet answer = 0",
+				"answer = ",
+				"answer"
+			],
+			"inputs": [
+				["3", "7"],
+				["5", "9"]
+			],
+			"answers": [10, 14]
 		}]
 	}, {
 		"name": "Fundamentals",
