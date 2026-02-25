@@ -6,6 +6,7 @@ import Evaluator from './Evaluator.ts'
 export const LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT = 'passed_assignment_:'
 export const PASSED_ASSIGNMENTS_BEFORE_CURRENT_SESSION: Assignment[] = []
 export type Language = 'JavaScript / TypeScript'
+export type Pass = 'no' | 'partial' | 'yes'
 
 export const USER_ID = localStorage.getItem('USER_ID') ?? crypto.randomUUID()
 localStorage.setItem('USER_ID', USER_ID)
@@ -81,9 +82,10 @@ export class Assignment {
 		get: Accessor<string>
 		set: (value: string) => void
 	}[]
-	#_answer: number | string | boolean | null | object
+	#_inputs: string[][]
+	#_answers: (number | string | boolean | null | object)[]
 	#_hashKey: string = ''
-	#_passed: boolean = false
+	#_passed: Pass = 'no'
 	get hashKey(): string {
 		if (!this.#_hashKey) {
 			throw new Error('Hash key not set')
@@ -95,7 +97,7 @@ export class Assignment {
 			throw new Error('Hash key already set')
 		}
 		this.#_hashKey = hashKey
-		this.#_passed = localStorage.getItem(`${LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT}${this.#_hashKey}`) !== null
+		this.#_passed = localStorage.getItem(`${LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT}${this.#_hashKey}`) !== null ? 'yes' : 'no'
 	}
 	get id() {
 		return this.#_id
@@ -116,19 +118,36 @@ export class Assignment {
 		return this.#_passed
 	}
 	async validate() {
-		const { result, ticks, error } = await Evaluator.evaluate(this.#_language, this.#_segments.map((segment) => segment.get()))
-		let passed: boolean
-		if (result === undefined) {
-			passed = false
-		} else if (![typeof this.#_answer, typeof result].find((type) => type !== 'object')) {
-			passed = JSON.stringify(this.#_answer) === JSON.stringify(result)
-		} else {
-			passed = this.#_answer === result
-		}
-		if (passed) {
-			this.#_passed = true
-		}
-		return { result, passed, ticks, error }
+		let result: unknown = undefined
+		let ticks: number[] = []
+		let error: unknown = undefined
+		const passed: boolean[] = []
+		const promises: Promise<void>[] = []
+		this.#_inputs.forEach((inputs, index) => {
+			promises.push(
+				Promise.resolve().then(async () => {
+					const answer = this.#_answers[index]
+					const { result: res, ticks: tic, error: err } = await Evaluator.evaluate(this.#_language, this.#_segments.map((segment) => segment.get()), inputs)
+					if (index === 0) {
+						result = res
+						ticks = tic
+					}
+					if (!error) {
+						error = err
+					}
+					if (result === undefined) {
+						passed.push(false)
+					} else if (![typeof answer, typeof result].find((type) => type !== 'object')) {
+						passed.push(JSON.stringify(answer) === JSON.stringify(result))
+					} else {
+						passed.push(answer === result)
+					}
+				}),
+			)
+		})
+		await Promise.all(promises)
+		this.#_passed = passed.every((p) => p) ? 'yes' : passed.some((p) => p) ? 'partial' : 'no'
+		return { result, passed: this.#_passed, ticks, error }
 	}
 
 	static get assignments() {
@@ -146,30 +165,37 @@ export class Assignment {
 	}
 
 	constructor(
-		id: string,
 		language: Language,
 		label: Label,
-		title: string,
-		assignment: string[],
-		answer: number | string | boolean | null | object,
+		data: {
+			id: string
+			title: string
+			segments: string[]
+			inputs: string[][]
+			answers: (number | string | boolean | null | object)[]
+		},
 	) {
 		if (
-			!id.match(
+			!data.id.match(
 				/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
 			)
 		) {
 			throw new Error('Key is not a valid UUID')
 		}
-		if (assignment.length < 2) {
-			throw new Error('Assignment must have at least 2 strings')
+		if (data.segments.length < 2) {
+			throw new Error('All assignments must at least have one segment to setup the assignment with optional inputs and then one for the user to write the code to solve the assignment.')
 		}
-		this.#_id = new UniqueID(id)
-		this.#_title = title
+		if (data.inputs.length !== data.answers.length) {
+			throw new Error('All assignments must have the same number of inputs and answers')
+		}
+		this.#_id = new UniqueID(data.id)
+		this.#_title = data.title
 		this.#_label = label
 		this.#_language = language
-		this.#_answer = answer
+		this.#_inputs = data.inputs
+		this.#_answers = data.answers
 		this.#_segments = []
-		assignment.forEach((segment, index) => {
+		data.segments.forEach((segment, index) => {
 			const [segmentSignal, setSegmentSignal] = createSignal(segment)
 			const s: {
 				get: Accessor<string>

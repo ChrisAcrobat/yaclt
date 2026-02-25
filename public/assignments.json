@@ -12,7 +12,8 @@
 				"answer = ",
 				"a + b == answer"
 			],
-			"answer": true
+			"inputs": [[]],
+			"answers": [true]
 		}]
 	}, {
 		"name": "Fundamentals",
@@ -26,7 +27,8 @@
 				"\tanswer += ",
 				"}\n\nanswer == 10"
 			],
-			"answer": true
+			"inputs": [[]],
+			"answers": [true]
 		}, {
 			"id": "65ef374b-4bc6-4858-982a-39cc59d3feec",
 			"title": "The \"while\" loop",
@@ -35,7 +37,8 @@
 				"\tanswer += i",
 				"}\n\nanswer == 10"
 			],
-			"answer": true
+			"inputs": [[]],
+			"answers": [true]
 		}, {
 			"id": "62579674-5c57-4367-b27c-03b20a81ab12",
 			"title": "The Math namespace",
@@ -44,7 +47,8 @@
 				"",
 				"answer"
 			],
-			"answer": 9.869604401089358
+			"inputs": [[]],
+			"answers": [9.869604401089358]
 		}]
 	}]
 }]

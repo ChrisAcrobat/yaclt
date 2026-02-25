@@ -23,7 +23,8 @@ function addAssignments(data: [
 				id: string
 				title: string
 				segments: string[]
-				answer: number | string | boolean | null | object
+				inputs: string[][]
+				answers: (number | string | boolean | null | object)[]
 			}[]
 		}[]
 	},
@@ -44,7 +45,7 @@ function addAssignments(data: [
 						resolve = r
 					}),
 				)
-				const assignment = new Assignment(assignmentData.id, item.language, label, assignmentData.title, assignmentData.segments, assignmentData.answer)
+				const assignment = new Assignment(item.language, label, assignmentData)
 				assignment.hashKey = await getHashKey(assignment)
 				if (localStorage.getItem(LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT + assignment.hashKey)) {
 					PASSED_ASSIGNMENTS_BEFORE_CURRENT_SESSION.push(assignment)

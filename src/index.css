@@ -9,6 +9,8 @@
 	--color-accent-hover: #1d4ed8;
 	--color-success: #059669;
 	--color-success-bg: #ecfdf5;
+	--color-warning: #f59e0b;
+	--color-warning-bg: #fef9c3;
 	--color-code-bg: #1e293b;
 	--color-code-text: #e2e8f0;
 	--color-code-border: #334155;
@@ -377,6 +379,11 @@ a:hover {
 .result-area.success {
 	background: var(--color-success-bg);
 	border-color: rgba(5, 150, 105, 0.3);
+}
+
+.result-area.partial {
+	background: var(--color-warning-bg);
+	border-color: rgba(250, 204, 21, 0.3);
 }
 
 .result-area output {
