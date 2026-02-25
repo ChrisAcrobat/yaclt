@@ -128,19 +128,19 @@ export class Assignment {
 				Promise.resolve().then(async () => {
 					const answer = this.#_answers[index]
 					const { result: res, ticks: tic, error: err } = await Evaluator.evaluate(this.#_language, this.#_segments.map((segment) => segment.get()), inputs)
+					if (res === undefined) {
+						passed.push(false)
+					} else if (![typeof answer, typeof res].find((type) => type !== 'object')) {
+						passed.push(JSON.stringify(answer) === JSON.stringify(res))
+					} else {
+						passed.push(answer === res)
+					}
 					if (index === 0) {
 						result = res
 						ticks = tic
 					}
 					if (!error) {
 						error = err
-					}
-					if (result === undefined) {
-						passed.push(false)
-					} else if (![typeof answer, typeof result].find((type) => type !== 'object')) {
-						passed.push(JSON.stringify(answer) === JSON.stringify(result))
-					} else {
-						passed.push(answer === result)
 					}
 				}),
 			)

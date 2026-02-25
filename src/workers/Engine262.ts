@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { Agent, CreateBuiltinFunction, CreateDataProperty, ManagedRealm, setSurroundingAgent, Value } from '@magic-works/engine262'
+import { Agent, CreateBuiltinFunction, CreateDataProperty, ManagedRealm, setSurroundingAgent, unwrapCompletion, Value } from '@magic-works/engine262'
 
 type Result =
 	| { Type: 'throw'; Value: { ErrorData: { value: Error } } }
@@ -29,15 +29,18 @@ function execute(script: string, inputs: string[]): Result {
 	let result
 	const realm = new ManagedRealm({})
 	realm.scope(() => {
-		const prompt = CreateBuiltinFunction(
-			() => {
-				return Value(inputs.shift()!)
-			},
-			1,
+		unwrapCompletion(CreateDataProperty(
+			realm.GlobalObject,
 			Value('prompt'),
-			[],
-		)
-		CreateDataProperty(realm.GlobalObject, Value('prompt'), prompt)
+			CreateBuiltinFunction(
+				() => {
+					return Value(inputs.shift()!)
+				},
+				1,
+				Value('prompt'),
+				[],
+			),
+		))
 		result = realm.evaluateScript(script)
 	})
 	return result as unknown as Result
@@ -76,12 +79,12 @@ function evaluate(script: string, inputs: string[], measureTicks = false, thresh
 
 onmessage = (event: MessageEvent) => {
 	const { script, inputs } = event.data
-	const { ticks, error: error1 } = evaluate(script, inputs, true)
+	const { ticks, error: error1 } = evaluate(script, structuredClone(inputs), true)
 	if (error1) {
 		postMessage({ result: undefined, ticks, error: error1 })
 		return
 	}
-	const { result, error: error2 } = evaluate(script, inputs, false)
+	const { result, error: error2 } = evaluate(script, structuredClone(inputs), false)
 	postMessage({ result, ticks, error: error1 || error2 })
 }
 
