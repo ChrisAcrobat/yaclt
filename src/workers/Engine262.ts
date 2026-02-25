@@ -26,7 +26,6 @@ function addJsonWrapper(script: string) {
 }
 
 function execute(script: string, inputs: string[]): Result {
-	let result
 	const realm = new ManagedRealm({})
 	realm.scope(() => {
 		unwrapCompletion(CreateDataProperty(
@@ -41,9 +40,8 @@ function execute(script: string, inputs: string[]): Result {
 				[],
 			),
 		))
-		result = realm.evaluateScript(script)
 	})
-	return result as unknown as Result
+	return realm.evaluateScript(script) as unknown as Result
 }
 
 let tickCounter = 0
