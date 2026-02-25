@@ -60,34 +60,41 @@ export default () => {
 		})
 	}
 	setTimeout(updateCodeCells)
+	let nextValidation = Promise.resolve()
+	let latestValidationId = 0
 	async function validate(value: string, set: (value: string) => void) {
 		set(value)
 		updateCodeCells()
 		const a = assignment()
 		if (!a) return
-		const v = await a.validate()
-		setResult(v.error || v.result)
-		setTicks(v.ticks)
-		setPassed(v.passed)
-		if (v.passed === 'yes') {
-			const userTicks = ticks().filter((_t, index) => index % 2).reduce((a, b) => a + b, 0)
-			const allTicks = ticks().reduce((a, b) => a + b, 0)
-			fetch(`https://docs.google.com/forms/d/e/1FAIpQLSf8sJDTIXh8UXZzQUVkVBDMayUCrTg4fThHBJg2JNqn37dxyg/formResponse?entry.377919147=${USER_ID}&entry.850045796=${a.id.id}&entry.1964957096=${userTicks}&entry.1220465795=${allTicks}&submit=Submit`, {
-				method: 'GET',
-				mode: 'no-cors',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded',
-				},
-			})
-			localStorage.setItem(
-				`${LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT}${a.hashKey}`,
-				JSON.stringify({
-					code: a.segments.filter((_s, index) => index % 2).map((s) => s.get()),
-					ticks: v.ticks,
-					result: v.result,
-				}),
-			)
-		}
+		const myId = ++latestValidationId
+		await nextValidation
+		if (myId !== latestValidationId) return
+		nextValidation = a.validate().then((v) => {
+			if (myId !== latestValidationId) return
+			setResult(v.error || v.result)
+			setTicks(v.ticks)
+			setPassed(v.passed)
+			if (v.passed === 'yes') {
+				const userTicks = ticks().filter((_t, index) => index % 2).reduce((a, b) => a + b, 0)
+				const allTicks = ticks().reduce((a, b) => a + b, 0)
+				fetch(`https://docs.google.com/forms/d/e/1FAIpQLSf8sJDTIXh8UXZzQUVkVBDMayUCrTg4fThHBJg2JNqn37dxyg/formResponse?entry.377919147=${USER_ID}&entry.850045796=${a.id.id}&entry.1964957096=${userTicks}&entry.1220465795=${allTicks}&submit=Submit`, {
+					method: 'GET',
+					mode: 'no-cors',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded',
+					},
+				})
+				localStorage.setItem(
+					`${LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT}${a.hashKey}`,
+					JSON.stringify({
+						code: a.segments.filter((_s, index) => index % 2).map((s) => s.get()),
+						ticks: v.ticks,
+						result: v.result,
+					}),
+				)
+			}
+		})
 	}
 	return (
 		<div class='assignment-page'>
