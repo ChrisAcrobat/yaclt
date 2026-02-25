@@ -59,7 +59,7 @@ export default () => {
 	}
 
 	async function run() {
-		const result = await Evaluator.evaluate('JavaScript / TypeScript', codes.map((code) => JSON.parse(code[0]())))
+		const result = await Evaluator.evaluate('JavaScript / TypeScript', codes.map((code) => JSON.parse(code[0]())), [])
 		setTestResult(JSON.stringify(result, null, '\n'))
 	}
 
