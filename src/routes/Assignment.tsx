@@ -1,13 +1,13 @@
 import { useParams } from '@solidjs/router'
 import { createMemo, createSignal, createUniqueId, ErrorBoundary, For, Show } from 'solid-js'
 import { A } from '@solidjs/router'
-import { Assignment, AssignmentNotFoundError, LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT, USER_ID } from '../types.tsx'
+import { Assignment, AssignmentNotFoundError, LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT, type Pass, USER_ID } from '../types.tsx'
 
 export default () => {
 	const params = useParams()
 	const [result, setResult] = createSignal()
 	const [ticks, setTicks] = createSignal<number[]>([])
-	const [passed, setPassed] = createSignal(false)
+	const [passed, setPassed] = createSignal<Pass>('no')
 	const [codeCellsWidth, setCodeCellsWidth] = createSignal(0)
 	const assignment = createMemo(() => {
 		const assignmentKey = params.path?.split('/').at(-1) ?? ''
@@ -20,7 +20,7 @@ export default () => {
 			})
 			setTicks(passedAssignmentSegments.ticks)
 			setResult(passedAssignmentSegments.result)
-			setPassed(true)
+			setPassed('yes')
 		} else {
 			setTicks(assignment.segments.map(() => -1))
 		}
@@ -60,34 +60,41 @@ export default () => {
 		})
 	}
 	setTimeout(updateCodeCells)
+	let nextValidation = Promise.resolve()
+	let latestValidationId = 0
 	async function validate(value: string, set: (value: string) => void) {
 		set(value)
 		updateCodeCells()
 		const a = assignment()
 		if (!a) return
-		const v = await a.validate()
-		setResult(v.error || v.result)
-		setTicks(v.ticks)
-		setPassed(v.passed)
-		if (v.passed) {
-			const userTicks = ticks().filter((_t, index) => index % 2).reduce((a, b) => a + b, 0)
-			const allTicks = ticks().reduce((a, b) => a + b, 0)
-			fetch(`https://docs.google.com/forms/d/e/1FAIpQLSf8sJDTIXh8UXZzQUVkVBDMayUCrTg4fThHBJg2JNqn37dxyg/formResponse?entry.377919147=${USER_ID}&entry.850045796=${a.id.id}&entry.1964957096=${userTicks}&entry.1220465795=${allTicks}&submit=Submit`, {
-				method: 'GET',
-				mode: 'no-cors',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded',
-				},
-			})
-			localStorage.setItem(
-				`${LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT}${a.hashKey}`,
-				JSON.stringify({
-					code: a.segments.filter((_s, index) => index % 2).map((s) => s.get()),
-					ticks: v.ticks,
-					result: v.result,
-				}),
-			)
-		}
+		const myId = ++latestValidationId
+		await nextValidation
+		if (myId !== latestValidationId) return
+		nextValidation = a.validate().then((v) => {
+			if (myId !== latestValidationId) return
+			setResult(v.error || v.result)
+			setTicks(v.ticks)
+			setPassed(v.passed)
+			if (v.passed === 'yes') {
+				const userTicks = ticks().filter((_t, index) => index % 2).reduce((a, b) => a + b, 0)
+				const allTicks = ticks().reduce((a, b) => a + b, 0)
+				fetch(`https://docs.google.com/forms/d/e/1FAIpQLSf8sJDTIXh8UXZzQUVkVBDMayUCrTg4fThHBJg2JNqn37dxyg/formResponse?entry.377919147=${USER_ID}&entry.850045796=${a.id.id}&entry.1964957096=${userTicks}&entry.1220465795=${allTicks}&submit=Submit`, {
+					method: 'GET',
+					mode: 'no-cors',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded',
+					},
+				})
+				localStorage.setItem(
+					`${LOCAL_STORAGE_PREFIX_PASSED_ASSIGNMENT}${a.hashKey}`,
+					JSON.stringify({
+						code: a.segments.filter((_s, index) => index % 2).map((s) => s.get()),
+						ticks: v.ticks,
+						result: v.result,
+					}),
+				)
+			}
+		})
 	}
 	return (
 		<div class='assignment-page'>
@@ -135,15 +142,18 @@ export default () => {
 							</For>
 						</div>
 					</div>
-					<div class='result-area' classList={{ success: passed() }}>
+					<div class='result-area' classList={{ success: passed() === 'yes', partial: passed() === 'partial' }}>
 						<p style='margin: 0;'>
-							<Show when={passed()}>
+							<Show when={passed() === 'yes'}>
 								<span aria-hidden='true'>✅</span> Passed —{' '}
+							</Show>
+							<Show when={passed() === 'partial'}>
+								<span aria-hidden='true'>🟡</span> Partial pass, answer is not generic —{' '}
 							</Show>
 							Result:<output style='display: inline-flex; margin-left: 0.55em; white-space: pre-wrap;'>{result()?.toString()}</output>
 						</p>
 					</div>
-					<Show when={passed()}>
+					<Show when={passed() === 'yes'}>
 						<div class='assignment-actions'>
 							<A href='/' class='btn btn-primary'>Back to Home</A>
 						</div>

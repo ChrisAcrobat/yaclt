@@ -3,23 +3,26 @@ import type { Language } from './types.tsx'
 type WorkerResult = { result: unknown; ticks: number; error: unknown }
 type Result = { result: unknown; ticks: number[]; error: unknown }
 
-function execute(language: Language, script: string) {
+function getWorker(language: Language) {
+	if (language !== 'JavaScript / TypeScript') {
+		throw new Error('Unsupported language')
+	}
+	return new Worker(new URL('./workers/Engine262.ts', import.meta.url), { type: 'module' })
+}
+function execute(language: Language, script: string, inputs: string[]) {
 	let resolve!: (data: WorkerResult) => void
 	let reject!: (err: unknown) => void
 	const promise = new Promise<WorkerResult>((res, rej) => {
 		resolve = res
 		reject = rej
 	})
-	if (language !== 'JavaScript / TypeScript') {
-		throw new Error('Unsupported language')
-	}
-	const worker = new Worker(new URL('./workers/Engine262.ts', import.meta.url), { type: 'module' })
+	const worker = getWorker(language)
 	worker.onerror = (event) => {
 		worker.terminate()
 		reject(event.error ?? new Error('Worker failed to load'))
 	}
 	worker.onmessage = () => {
-		worker.postMessage({ script })
+		worker.postMessage({ script, inputs })
 		worker.onmessage = (event) => {
 			worker.terminate()
 			resolve(event.data)
@@ -29,7 +32,7 @@ function execute(language: Language, script: string) {
 }
 
 export default class {
-	static evaluate(language: Language, script: string[]): Promise<Result> {
+	static evaluate(language: Language, script: string[], inputs: string[]): Promise<Result> {
 		let mergedSegments: string = ''
 		const promises: Promise<WorkerResult>[] = []
 		script.forEach((segment) => {
@@ -39,7 +42,7 @@ export default class {
 			mergedSegments += segment
 			promises.push(
 				new Promise((resolve) => {
-					execute(language, mergedSegments).then((res) => {
+					execute(language, mergedSegments, inputs).then((res) => {
 						resolve(res)
 					})
 				}),

@@ -3,7 +3,7 @@ import { type Accessor, createSignal, For, Show } from 'solid-js'
 import { Assignment, Label, PASSED_ASSIGNMENTS_BEFORE_CURRENT_SESSION } from '../types.tsx'
 
 function getPassedAssignments() {
-	return Assignment.flat().filter((assignment) => assignment.passed)
+	return Assignment.flat().filter((assignment) => assignment.passed === 'yes')
 }
 const passedAssignments = getPassedAssignments()
 const passedAssignmentsSignals: Record<string, [Accessor<boolean>, (value: boolean) => void]> = {}
