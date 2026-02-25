@@ -5,14 +5,14 @@
 	"type": "module",
 	"dependencies": {
 		"@deno/vite-plugin": "^1.0.6",
-		"@magic-works/engine262": "^0.0.1-4d5d1d017bb82a002adb06f997d7e0d57bb71226",
+		"@magic-works/engine262": "^0.0.1-86373defd8d1a8980cb95055359231e1b2a45782",
 		"@solidjs/router": "^0.15.4",
-		"solid-js": "^1.9.10"
+		"solid-js": "^1.9.11"
 	},
 	"devDependencies": {
-		"@types/node": "^24.10.1",
+		"@types/node": "^24.10.13",
 		"typescript": "~5.9.3",
-		"vite": "^7.2.4",
+		"vite": "^7.3.1",
 		"vite-plugin-solid": "^2.11.10"
 	}
 }
