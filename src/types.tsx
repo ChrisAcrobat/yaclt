@@ -175,6 +175,8 @@ export class Assignment {
 			answers: (number | string | boolean | null | object)[]
 		},
 	) {
+		label = structuredClone(label)
+		data = structuredClone(data)
 		if (
 			!data.id.match(
 				/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
